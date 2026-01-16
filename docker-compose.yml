@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  disasterlens:
+    build: .
+    container_name: disasterlens-ai
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./chroma_db:/app/chroma_db
+      - ./pathway_data:/app/pathway_data
+    restart: unless-stopped

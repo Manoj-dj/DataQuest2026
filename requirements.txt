@@ -1,0 +1,55 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# Explicitly set CPU Torch
+torch==2.2.1
+torchvision==0.17.1
+
+# Core Framework
+pathway==0.13.1
+
+# Vector Database
+chromadb==0.4.22
+
+# Embeddings
+sentence-transformers==2.3.1
+
+# LLM Integration
+google-generativeai==0.3.2
+
+# API Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+websockets==12.0
+
+# HTTP Requests
+requests==2.31.0
+httpx==0.26.0
+aiohttp==3.9.1
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.3
+
+# XML/RSS Parsing
+feedparser==6.0.10
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Utilities
+python-dotenv==1.0.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Logging
+loguru==0.7.2
+
+# Date/Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Geospatial (for advanced features)
+geopy==2.4.1
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
