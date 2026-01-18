@@ -1,0 +1,35 @@
+{
+  "name": "disasterlens-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext js,jsx"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "leaflet": "^1.9.4",
+    "recharts": "^2.10.3",
+    "axios": "^1.6.5",
+    "@tanstack/react-query": "^5.17.15",
+    "lucide-react": "^0.309.0",
+    "date-fns": "^3.0.6",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.0",
+    "marked": "^11.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.11",
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.33",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0"
+  }
+}

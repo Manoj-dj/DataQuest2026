@@ -1,333 +1,445 @@
 # 🌍 DisasterLens AI - Real-Time Climate Emergency Intelligence System
 
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Pathway](https://img.shields.io/badge/Pathway-0.13.1-green.svg)](https://pathway.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-teal.svg)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<div align="center">
 
-> **A production-ready Live AI system that reduces disaster response time from 8–12 hours to under 5 seconds through real-time RAG-powered intelligence.**
+![DisasterLens AI](https://img.shields.io/badge/DisasterLens-AI-blue?style=for-the-badge)
+![Pathway](https://img.shields.io/badge/Pathway-Streaming-green?style=for-the-badge)
+![React](https://img.shields.io/badge/React-18.2-blue?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109-teal?style=for-the-badge)
 
-Built for **DataQuest 2026 Hackathon** at IIT Kharagpur, demonstrating Pathway’s streaming engine for dynamic, always-up-to-date climate/disaster intelligence.
+**Real-time disaster intelligence with Pathway streaming, RAG, and multi-modal analysis**
 
----
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Documentation](#-documentation)
 
-## 📋 Table of Contents
-
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [API Documentation](#api-documentation)
-- [Project Structure](#project-structure)
-- [Real-Time Demonstration](#real-time-demonstration)
-- [Future Enhancements](#future-enhancements)
-- [Acknowledgments](#acknowledgments)
-- [License](#license)
+</div>
 
 ---
 
 ## 🎯 Overview
 
-DisasterLens AI is a **Live AI** application for real-time climate and disaster intelligence. Instead of stale, batch-updated systems, it maintains a continuously updated knowledge base that reacts within seconds when new events appear or existing information changes.
+DisasterLens AI is an intelligent disaster monitoring system that aggregates real-time disaster data from multiple sources (GDACS, NewsAPI, NASA EONET), processes it through Pathway's streaming engine, and provides interactive RAG-powered queries with multi-modal analysis.
 
-Traditional disaster dashboards suffer from:
-- **Static knowledge**: Manual or batch re-indexing every few hours.
-- **Delayed insight**: Critical changes can take hours to propagate.
-- **Fragmented data**: Multiple feeds, no unified reasoning layer.
+### Key Capabilities
 
-DisasterLens AI solves this by coupling **Pathway** for streaming ETL with a **dynamic RAG pipeline** (MiniLM embeddings + ChromaDB + Gemini 2.x Flash) and a **professional web dashboard** for emergency managers.
-
----
-
-## 🚨 Problem Statement
-
-**Hackathon Goal:** Build a RAG application on top of Pathway that connects to a **dynamic, continuously changing data source** and proves that answers update in real time without manual restarts or batch re-indexing.
-
-**Our Use Case:** A climate & disaster intelligence assistant that:
-- Ingests **live disaster alerts and news**.
-- Maintains an **incrementally updated** semantic index.
-- Answers questions like “What severe events are ongoing right now?” using the latest data.
-- Visually shows **live map updates** and **risk scores** when new events are ingested.
-
-### Judging Criteria Alignment (Short)
-
-| Criterion                          | Weight | How We Address It                                                |
-|------------------------------------|--------|------------------------------------------------------------------|
-| Real-Time Capability & Dynamism    | 35%    | Streaming ingestion, incremental vector updates, live demo       |
-| Technical Implementation & Elegance| 30%    | Modular, Pathway-centric design, logging, typed models           |
-| Innovation & UX                    | 20%    | Risk scoring, interactive map, charts, live notifications        |
-| Impact & Feasibility               | 15%    | Disaster-response use case, cloud-ready architecture            |
+- 🔄 **Real-Time Streaming**: Pathway-based event ingestion from 3+ data sources
+- 🤖 **RAG System**: OpenAI GPT-4 powered intelligent queries with semantic search
+- 🗺️ **Interactive Maps**: Live disaster event visualization with Leaflet
+- 📊 **Analytics Dashboard**: Real-time statistics and risk assessment
+- 🖼️ **Multi-Modal Analysis**: GPT-4 Vision for satellite imagery analysis
+- ⚡ **Sub-Second Latency**: Pathway's Rust engine for high-performance streaming
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### Core MVP (Implemented)
+### 🔍 Intelligent Query System
+- Natural language disaster queries
+- Semantic search with ChromaDB vector store
+- Contextual responses with source citations
+- Risk assessment and severity analysis
 
-#### 1. Real-Time Data Ingestion
+### 🗺️ Live Disaster Map
+- Real-time event visualization
+- Color-coded severity indicators (Red/Orange/Green)
+- Interactive markers with detailed popups
+- Geographic clustering and filtering
 
-- **GDACS Connector**
-  - Streams alerts from the GDACS RSS feed (earthquakes, floods, cyclones, tsunamis, volcanoes).
-  - Parses severity (Red/Orange/Green), location, magnitude, population impact.
-  - Polling interval configurable (default ~120 seconds).
+### 📈 Analytics Dashboard
+- Event statistics by type and severity
+- Risk score distribution
+- Temporal analysis charts
+- Population impact metrics
 
-- **NewsAPI Connector**
-  - Pulls breaking disaster-related news (earthquake, wildfire, flood, cyclone, etc.).
-  - Enriches structured alerts with human-readable context.
-  - Classifies disaster type and severity heuristically from article text.
+### 🖼️ Multi-Modal Analysis
+- Satellite imagery integration (NASA Worldview)
+- GPT-4 Vision for image analysis
+- Enhanced event context with visual data
+- CLIP embeddings for image similarity search
 
-#### 2. Pathway Streaming Pipeline
+### ⚡ Real-Time Updates
+- WebSocket live event streaming
+- Automatic data refresh every 2 minutes
+- Pathway incremental processing
+- Zero-downtime updates
 
-- Unifies GDACS + NewsAPI into a **single streaming table**.
-- Performs:
-  - Incremental event ingestion and deduplication.
-  - Enrichment with standardized schema (type, severity, geo, description, sources).
-  - **Risk scoring** combining severity, magnitude, disaster type multipliers, and population affected.
-- Exposes a live “event stream” that is used to update the vector store without restarts.
+---
 
-#### 3. Dynamic RAG Pipeline
+## 🚀 Quick Start
 
-- **Embeddings**: `all-MiniLM-L6-v2` via sentence-transformers (fast, 384-dim).
-- **Vector DB**: ChromaDB persistent collection (`disaster_events`) with cosine similarity.
-- **RAG Flow**:
-  - New/updated events are embedded and upserted into Chroma incrementally.
-  - Queries embed the text and retrieve top‑k relevant events (with optional filters).
-  - Retrieved contexts are injected into a custom, safety-focused prompt for Gemini.
+### Prerequisites
 
-#### 4. Gemini LLM Integration
+- Python 3.11+
+- Node.js 18+ (for frontend)
+- `uv` package manager (recommended) or `pip`
+- WSL/Unix environment (Linux recommended)
 
-- Model: **Gemini 2.x Flash** (configurable), tuned for:
-  - Low temperature (0.2) for factual responses.
-  - Clear citation and source referencing.
-- RAG prompt includes:
-  - System instructions for disaster domain.
-  - Structured event snippets (type, severity, risk, time, source).
-- Returns:
-  - Natural language **answer**.
-  - **Structured source list** with event IDs, locations, timestamps, URLs.
-  - Short **risk-assessment summary** (Low/Moderate/High/Critical).
+### Installation
 
-#### 5. FastAPI Backend & WebSocket
-
-- REST endpoints:
-  - `POST /api/query` – RAG Q&A.
-  - `GET /api/events/latest` – latest events (with filters).
-  - `GET /api/events/{event_id}` – details for a single event.
-  - `GET /api/stats` – aggregated stats (per type, per severity, avg risk).
-  - `GET /health` – health and uptime.
-- WebSocket:
-  - `GET /ws` – pushes `new_event` messages to the frontend when the pipeline ingests new data.
-  - Used for **real-time notifications** and live dashboard updates.
-
-#### 6. Professional Frontend (HTML/CSS/JS)
-
-- **Query Panel**
-  - Text box + quick query buttons (“Most severe”, “Earthquakes”, “Wildfires”, “High impact”).
-  - Shows LLM answer, latency, timestamp.
-  - Displays risk assessment banner and list of sources with severity chips and links.
-
-- **Live Map**
-  - Built with Leaflet.js.
-  - Color-coded markers (Red / Orange / Green) by severity.
-  - Popups show type, location, risk score, time.
-
-- **Events List**
-  - Card-based list of recent events.
-  - Filters by disaster type and severity.
-  - Risk score badges.
-
-- **Statistics**
-  - High-level KPIs (total events, avg risk, high-risk count, Red alerts).
-  - Chart.js bar/doughnut charts (by type, by severity).
-
-- **Real-Time UX**
-  - WebSocket connection indicator (connected/disconnected).
-  - Toast notifications when new events arrive.
-
-#### 7. Advanced Feature: Risk Scoring with Explainability
-
-We add a **domain-inspired risk score** per event:
-```text
-Risk ≈ base(severity) × type_multiplier × magnitude_factor × population_factor
-Used to:
-
-Rank events in answers.
-
-Drive “High / Critical” risk labels.
-
-Power stats (avg risk, high-risk count).
-
-Display risk score on cards and map popups.
-
+#### 1. Clone Repository
+```bash
+git clone <repository-url>
+cd DataQuest2026
 ```
 
-#### 🏗️ Architecture
-***High-level layers:***
+#### 2. Install Python Dependencies
+```bash
+# Using uv (recommended)
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt --index-strategy unsafe-best-match
 
-**1.Connectors**
-
-GDACS RSS
-
-NewsAPI JSON
-
-Easily extendable to more sources (S3, DB CDC, social streams).
-
-**2.Pathway Pipeline**
-
-Ingests connector streams.
-
-Cleans, normalizes, and enriches events.
-
-Computes risk scores.
-
-Publishes a unified streaming table of events.
-
-**3.Vector & LLM Layer**
-
-Embedding service (MiniLM).
-
-ChromaDB persistent collection.
-
-Gemini LLM wrapper for RAG answers and risk summaries.
-
-**4.API & Realtime Layer**
-
-FastAPI for REST.
-
-WebSocket for live updates to the UI.
-
-**5.Frontend**
-
-SPA-like HTML/CSS/JS dashboard.
-
-Map, charts, query panel, filters.
-
-**🧰 Technology Stack**
-
-    -Core Engine: Pathway (Python API, Rust engine)
-
-    -ML / RAG: sentence-transformers, ChromaDB, Gemini 2.x Flash
-
-    -Backend: FastAPI, Uvicorn
-
-    -Frontend: HTML, CSS, vanilla JS, Leaflet, Chart.js
-
-    -Utilities: Loguru for logging, Pydantic for models, dotenv/YAML for config
-
-    -Containerization: Docker + docker-compose (optional)
-
-
-**📦 Installation**
-Prerequisites
-Python 3.11+
-
-pip
-
-(Optional) Docker & docker-compose
-
-API keys:
-
-Gemini API key
-
-NewsAPI key
-
-**Steps**
-git clone https://github.com/your-org/disasterlens-ai.git
-cd disasterlens-ai
-
-python -m venv venv
-# Windows: venv\Scripts\activate
-# Linux/Mac: source venv/bin/activate
-
+# OR using pip
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
 
-cp .env.example .env
-# Edit .env to add GEMINI_API_KEY and NEWSAPI_KEY
+#### 3. Install Frontend Dependencies
+```bash
+cd frontend
+npm install
+cd ..
+```
 
-mkdir -p data/live_events logs
+#### 4. Configure Environment Variables
+Create a `.env` file in the project root:
+```bash
+# Required
+OPENAI_API_KEY=your_openai_api_key_here
 
-python src/main.py
+# Optional
+NEWSAPI_KEY=your_newsapi_key_here  # For NewsAPI connector
+GDACS_RSS_URL=https://www.gdacs.org/xml/rss.xml
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+OPENAI_MODEL=gpt-4o-mini
+APP_HOST=0.0.0.0
+APP_PORT=8080
+```
 
-**Open: http://localhost:8080**
+#### 5. Start Backend
+```bash
+chmod +x run_backend.sh
+./run_backend.sh
+```
 
-**For Docker:**
-cp .env.example .env
-# Edit .env
+The backend will:
+- Initialize ChromaDB vector store
+- Start Pathway streaming pipeline (GDACS, NewsAPI, NASA EONET)
+- Load embedding models (text + CLIP image embeddings)
+- Start FastAPI server on port 8080
 
-docker-compose up --build
-# Then visit http://localhost:8080
+#### 6. Start Frontend (Separate Terminal)
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend runs on `http://localhost:3000`
 
 ---
 
-**⚙️ Configuration**
-.env (key variables):
+## 📁 Project Structure
 
-GEMINI_API_KEY=your_gemini_key
-NEWSAPI_KEY=your_newsapi_key
+```
+DataQuest2026/
+├── src/                          # Backend source code
+│   ├── api/                      # FastAPI endpoints
+│   │   ├── server.py            # REST API routes
+│   │   └── websocket_handler.py # WebSocket for real-time updates
+│   ├── connectors/              # Data source connectors
+│   │   ├── base_connector.py
+│   │   ├── gdacs_connector.py   # GDACS RSS feed
+│   │   ├── newsapi_connector.py # NewsAPI articles
+│   │   └── nasa_eonet_connector.py # NASA EONET events
+│   ├── pipeline/                # Pathway streaming pipeline
+│   │   ├── disaster_stream.py   # Main pipeline logic
+│   │   └── risk_scoring.py      # Risk calculation engine
+│   ├── rag/                     # RAG components
+│   │   ├── embedder.py          # Text + image embeddings
+│   │   ├── llm_interface.py     # OpenAI GPT-4 interface
+│   │   └── vector_store.py      # ChromaDB vector store
+│   ├── utils/                   # Utilities
+│   │   ├── logger.py            # Logging system
+│   │   ├── schemas.py           # Data schemas
+│   │   └── imagery_utils.py     # Image URL generation
+│   └── main.py                  # Application entry point
+│
+├── frontend/                     # React frontend
+│   ├── src/
+│   │   ├── components/          # React components
+│   │   │   ├── Dashboard/      # Statistics dashboard
+│   │   │   ├── Events/         # Event list/cards
+│   │   │   ├── Map/            # Leaflet map component
+│   │   │   ├── Query/          # RAG query panel
+│   │   │   ├── Imagery/        # Image gallery/modal
+│   │   │   ├── Header/         # App header
+│   │   │   └── Sidebar/        # Navigation sidebar
+│   │   ├── hooks/               # Custom React hooks
+│   │   │   ├── useDisasterEvents.js
+│   │   │   ├── useImagery.js
+│   │   │   ├── useStatistics.js
+│   │   │   └── useWebSocket.js
+│   │   ├── services/            # API services
+│   │   │   ├── api.js           # Axios HTTP client
+│   │   │   └── websocket.js     # WebSocket client
+│   │   └── utils/               # Frontend utilities
+│   │       ├── constants.js
+│   │       └── formatters.js
+│   ├── public/                  # Static assets
+│   └── package.json
+│
+├── config/                       # Configuration files
+│   └── config.yaml              # Application configuration
+│
+├── logs/                         # Application logs
+│   └── disasterlens_*.log
+│
+├── chroma_db/                    # ChromaDB persistence
+│
+├── tests/                        # Test files
+│   └── test_connectors.py
+│
+├── requirements.txt              # Python dependencies
+├── run_backend.sh               # Backend startup script
+├── start_frontend.sh            # Frontend startup script
+└── README.md                     # This file
+```
 
-APP_HOST=0.0.0.0
-APP_PORT=8080
+---
 
-CHROMA_PERSIST_DIRECTORY=./chroma_db
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-GEMINI_MODEL=gemini-2.0-flash-exp
+## 🏗️ Architecture
 
-GDACS_RSS_URL=https://www.gdacs.org/xml/rss.xml
-NEWSAPI_QUERY=disaster OR earthquake OR wildfire OR flood OR hurricane
+### System Components
 
-**📁 Project Structure**
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Data Sources                          │
+├──────────────┬──────────────┬──────────────────────────┤
+│  GDACS RSS   │  NewsAPI     │   NASA EONET             │
+│   (Python)   │   (REST)     │    (REST)                │
+└──────┬───────┴──────┬───────┴──────┬───────────────────┘
+       │              │              │
+       └──────────────┼──────────────┘
+                      │
+            ┌─────────▼─────────┐
+            │  Pathway Stream   │
+            │   Engine (Rust)   │
+            │  - Transformations│
+            │  - Risk Scoring   │
+            │  - Deduplication  │
+            └─────────┬─────────┘
+                      │
+       ┌──────────────┼──────────────┐
+       │              │              │
+┌──────▼──────┐ ┌─────▼──────┐ ┌────▼───────┐
+│  ChromaDB   │ │  Embedder  │ │  LLM (GPT) │
+│ Vector Store│ │  (CLIP)    │ │   Interface│
+└──────┬──────┘ └────────────┘ └────┬───────┘
+       │                             │
+       └─────────────┬───────────────┘
+                     │
+            ┌────────▼────────┐
+            │   FastAPI       │
+            │   REST + WS     │
+            └────────┬────────┘
+                     │
+            ┌────────▼────────┐
+            │  React Frontend │
+            │  + Leaflet Map  │
+            └─────────────────┘
+```
 
-disasterlens-ai/
-├── README.md
-├── requirements.txt
-├── .env.example
-├── docker-compose.yml
-├── Dockerfile
-├── config/
-│   └── config.yaml
-├── src/
-│   ├── main.py                  # Orchestration: Pathway + API
-│   ├── connectors/              # GDACS, NewsAPI, base connector
-│   ├── pipeline/                # Pathway pipeline + risk scoring
-│   ├── rag/                     # Embeddings, vector store, LLM
-│   ├── api/                     # FastAPI + WebSocket handlers
-│   └── utils/                   # Logger, Pydantic schemas
-├── frontend/
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-└── tests/
-    └── test_connectors.py
+### Data Flow
 
+1. **Ingestion**: Connectors fetch events from GDACS, NewsAPI, NASA EONET
+2. **Streaming**: Pathway processes events in real-time (transformations, risk scoring)
+3. **Embedding**: Text and image embeddings generated for vector search
+4. **Storage**: Events indexed in ChromaDB with metadata and embeddings
+5. **Query**: RAG system retrieves relevant events and generates GPT-4 responses
+6. **Display**: Frontend visualizes events on map, dashboard, and query results
 
+---
 
-#### 🔭 Future Enhancements
-Short/medium-term roadmap:
+## 🔧 Configuration
 
-More Data Sources
+### Backend Configuration (`config/config.yaml`)
 
-USGS earthquakes, NASA FIRMS wildfires, weather APIs, social feeds.
+```yaml
+data_sources:
+  gdacs:
+    enabled: true
+    url: https://www.gdacs.org/xml/rss.xml
+    polling_interval: 120
+  
+  newsapi:
+    enabled: true
+    query: "disaster earthquake wildfire flood"
+    polling_interval: 180
+  
+  nasa_eonet:
+    enabled: true
+    api_url: https://eonet.gsfc.nasa.gov/api/v3/events
+    polling_interval: 3600
 
-Richer Pathway Logic
+vector_store:
+  collection_name: disaster_events
 
-Time-window aggregations, trend detection, compound event detection.
+llm:
+  temperature: 0.2
+  max_tokens: 1000
 
-Better Risk Modeling
+risk_scoring:
+  severity_weights:
+    Red: 10
+    Orange: 7
+    Green: 3
+```
 
-Integrate population density, infrastructure, vulnerability indices.
+---
 
-User & Org Features
+## 📡 API Endpoints
 
-Authentication, roles (public vs. responder vs. admin), org-based views.
+### REST API (Port 8080)
 
-Evaluation & MLOps
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | System health check |
+| `/api/query` | POST | RAG query endpoint |
+| `/api/events/latest` | GET | Get latest events (for map) |
+| `/api/events/{event_id}` | GET | Get specific event details |
+| `/api/stats` | GET | Statistics dashboard data |
+| `/api/debug/events` | GET | Debug endpoint (dev only) |
 
-RAG evaluation (RAGAS), CI/CD, monitoring dashboards.
+### WebSocket (Port 8080)
 
+| Endpoint | Protocol | Description |
+|----------|----------|-------------|
+| `/ws` | WebSocket | Real-time event streaming |
 
+---
 
+## 🧪 Testing
 
+### Run Tests
+```bash
+# Backend tests
+pytest tests/
+
+# Frontend tests (if configured)
+cd frontend
+npm test
+```
+
+### Manual Testing
+```bash
+# Test API health
+curl http://localhost:8080/api/health
+
+# Test RAG query
+curl -X POST http://localhost:8080/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Show me recent earthquakes"}'
+
+# Test events endpoint
+curl http://localhost:8080/api/events/latest?limit=10
+```
+
+---
+
+## 🛠️ Development
+
+### Backend Development
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run in debug mode
+python src/main.py
+
+# Check logs
+tail -f logs/disasterlens_*.log
+```
+
+### Frontend Development
+```bash
+cd frontend
+npm run dev  # Starts Vite dev server with HMR
+```
+
+### Adding New Data Sources
+
+1. Create connector in `src/connectors/` extending `BaseDisasterConnector`
+2. Add to `src/pipeline/disaster_stream.py` `build_pipeline()`
+3. Update `config/config.yaml` with connector settings
+
+---
+
+## 📊 Technology Stack
+
+### Backend
+- **Pathway 0.13.1**: Real-time streaming engine
+- **FastAPI 0.109**: REST API framework
+- **ChromaDB 0.5.0+**: Vector database
+- **OpenAI GPT-4**: LLM for RAG
+- **Sentence-Transformers**: Text embeddings
+- **CLIP**: Image embeddings
+- **Uvicorn**: ASGI server
+
+### Frontend
+- **React 18.2**: UI framework
+- **Vite 5**: Build tool
+- **Tailwind CSS**: Styling
+- **React Leaflet**: Map component
+- **Recharts**: Data visualization
+- **Axios**: HTTP client
+- **Marked**: Markdown parser
+
+---
+
+## 🐛 Troubleshooting
+
+### ChromaDB Issues
+```bash
+# Reset ChromaDB database
+rm -rf chroma_db
+# Restart backend - it will recreate
+```
+
+### Pathway Errors
+```bash
+# Check Pathway version
+python -c "import pathway as pw; print(pw.__version__)"
+
+# Verify Pathway installation
+python check_pathway_installation.py
+```
+
+### Frontend Connection Issues
+- Ensure backend is running on port 8080
+- Check CORS settings in `src/api/server.py`
+- Verify WebSocket endpoint is accessible
+
+---
+
+## 📝 License
+
+This project is developed for DataQuest 2026 hackathon.
+
+---
+
+## 🙏 Acknowledgments
+
+- **GDACS**: Global Disaster Alert and Coordination System
+- **NASA EONET**: Earth Observatory Natural Event Tracker
+- **Pathway**: Real-time data processing engine
+- **OpenAI**: GPT-4 Vision API
+
+---
+
+<div align="center">
+
+**Built with ❤️ for real-time disaster intelligence**
+
+[Report Issues](https://github.com/your-repo/issues) • [Documentation](./docs/) • [Contributing](./CONTRIBUTING.md)
+
+</div>

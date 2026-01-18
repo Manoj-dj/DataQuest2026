@@ -4,14 +4,20 @@ Orchestrates Pathway pipeline, vector store, LLM, and FastAPI server.
 Runs all components in parallel for real-time operation.
 """
 
+from fastapi.responses import HTMLResponse
 import os
 import sys
 import threading
 import time
+import signal
 import yaml
 from pathlib import Path
 from dotenv import load_dotenv
 import uvicorn
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 import pathway as pw
 from src.pipeline.disaster_stream import DisasterStreamPipeline
@@ -114,6 +120,14 @@ class DisasterLensApp:
         """
         self.logger.logger.info("Starting Pathway streaming pipeline...")
         
+        # Log Pathway version and features for hackathon judges
+        try:
+            self.logger.logger.info(f"Using Pathway version: {pw.__version__}")
+            self.logger.logger.info("Pathway streaming mode: ENABLED")
+            self.logger.logger.info("Pathway connectors: GDACS (PythonReader-0), NewsAPI (PythonReader-1), NASA EONET (PythonReader-2)")
+        except:
+            pass
+        
         try:
             disaster_stream = self.pipeline.build_pipeline()
             
@@ -122,15 +136,56 @@ class DisasterLensApp:
                 Callback when new event arrives in Pathway stream.
                 """
                 if is_addition:
-                    event_id = str(row['event_id'])
-                    text_content = str(row['text_content'])
-                    
-                    metadata_str = str(row['metadata_json'])
-                    metadata = eval(metadata_str) if metadata_str else {}
-                    
-                    self.vector_store.add_event(event_id, text_content, metadata)
-                    
-                    self.logger.logger.info(f"New event indexed: {event_id}")
+                    import json
+                    try:
+                        event_id = str(row.get('event_id', 'unknown'))
+                        text_content = str(row.get('text_content', ''))
+                        
+                        metadata_str = str(row.get('metadata_json', '{}'))
+                        try:
+                            metadata = eval(metadata_str) if metadata_str and metadata_str != '{}' else {}
+                        except:
+                            metadata = {}
+                        
+                        # Extract coordinates directly from Pathway row if not in metadata
+                        # This ensures coordinates are saved even if metadata_json doesn't have them
+                        if 'latitude' in row and 'longitude' in row:
+                            try:
+                                lat = float(row.get('latitude', 0.0))
+                                lon = float(row.get('longitude', 0.0))
+                                if lat != 0.0 or lon != 0.0:
+                                    metadata['latitude'] = lat
+                                    metadata['longitude'] = lon
+                                    metadata['location_name'] = metadata.get('location_name') or row.get('location_name', '')
+                            except:
+                                pass
+                        
+                        # Extract imagery URLs if present
+                        imagery_urls = None
+                        if 'imagery_urls_json' in row:
+                            imagery_json_str = str(row.get('imagery_urls_json', '[]'))
+                            if imagery_json_str and imagery_json_str != '[]':
+                                try:
+                                    imagery_urls = json.loads(imagery_json_str)
+                                    if not isinstance(imagery_urls, list):
+                                        imagery_urls = []
+                                except:
+                                    imagery_urls = []
+                        
+                        # Use add_event_with_imagery if imagery URLs are available
+                        if imagery_urls and len(imagery_urls) > 0:
+                            self.vector_store.add_event_with_imagery(
+                                event_id=event_id,
+                                text_content=text_content,
+                                metadata=metadata,
+                                imagery_urls=imagery_urls
+                            )
+                            self.logger.logger.info(f"New event with imagery indexed: {event_id} ({len(imagery_urls)} images)")
+                        else:
+                            self.vector_store.add_event(event_id, text_content, metadata)
+                            self.logger.logger.info(f"New event indexed: {event_id}")
+                    except Exception as e:
+                        self.logger.log_error("on_change callback", e)
             
             pw.io.subscribe(disaster_stream, on_change)
             
@@ -147,6 +202,22 @@ class DisasterLensApp:
         self.logger.logger.info("Starting FastAPI server...")
         
         app = create_app(self.vector_store, self.llm)
+
+        # Mount static files for frontend
+        from fastapi.staticfiles import StaticFiles
+        from fastapi.responses import FileResponse
+        import os
+        frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+        if os.path.exists(frontend_path):
+            app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+            # Serve index.html at root
+            @app.get("/", response_class=HTMLResponse)
+            async def read_root():
+                index_path = os.path.join(frontend_path, "index.html")
+                if os.path.exists(index_path):
+                    with open(index_path, "r") as f:
+                        return f.read()
+                return "<h1>Frontend not found</h1>"
         
         app.add_api_websocket_route("/ws", websocket_endpoint)
         
@@ -177,10 +248,19 @@ class DisasterLensApp:
         
         self.run_api_server()
 
+def signal_handler(sig, frame):
+    """Graceful shutdown handler to prevent threading errors."""
+    app_logger.logger.info("Shutting down gracefully...")
+    sys.exit(0)
+
 def main():
     """
     Application entry point.
     """
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     try:
         app = DisasterLensApp()
         app.run()

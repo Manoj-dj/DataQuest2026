@@ -36,10 +36,33 @@ wheels/
 # Data
 pathway_data/
 chroma_db/
+chroma_db_backup_*/
+test_chroma_db/
 data/live_events/*.json
 *.log
+debug_output.log
+pathway_debug.log
+server_output.log
+server.log
 
 # OS
 .DS_Store
 Thumbs.db
 .env.example
+
+# Temporary fix scripts (remove after cleanup)
+fix_*.sh
+upgrade_*.sh
+reset_*.sh
+check_*.sh
+clean_*.sh
+install_*.sh
+setup.sh
+prepare_completed_branch.sh
+
+# Error files
+=*.0
+
+# Python cache
+*.pyc
+__pycache__/

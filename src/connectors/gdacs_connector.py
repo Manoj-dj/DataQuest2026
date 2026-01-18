@@ -33,6 +33,15 @@ class GDACSConnector(BaseDisasterConnector):
                 feed = feedparser.parse(response.content)
                 new_events = 0
                 
+                # DEBUG: Log first event schema for Pathway debugging
+                if feed.entries and len(self.seen_events) == 0:
+                    first_event = self.parse_event(feed.entries[0]) if feed.entries else None
+                    if first_event:
+                        self.logger.logger.info(f"=== GDACS EVENT SCHEMA DEBUG ===")
+                        self.logger.logger.info(f"Sample event keys: {list(first_event.keys())}")
+                        self.logger.logger.info(f"Sample event (first 500 chars): {str(first_event)[:500]}")
+                        self.logger.logger.info(f"================================")
+                
                 for entry in feed.entries:
                     event = self.parse_event(entry)
                     

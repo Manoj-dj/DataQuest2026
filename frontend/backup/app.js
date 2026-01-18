@@ -286,38 +286,11 @@ function createEventCard(event) {
     const card = document.createElement('div');
     card.className = `event-card severity-${event.severity}`;
     
-    // Build imagery section if available
-    let imagerySection = '';
-    if (event.imagery_urls && event.imagery_urls.length > 0) {
-        const images = event.imagery_urls.slice(0, 3); // Limit to 3 images
-        imagerySection = `
-            <div class="event-imagery">
-                <div class="imagery-header">
-                    <span class="imagery-icon">🖼️</span>
-                    <span class="imagery-count">${images.length} image${images.length > 1 ? 's' : ''}</span>
-                </div>
-                <div class="imagery-grid">
-                    ${images.map((url, idx) => `
-                        <div class="imagery-item" data-image-url="${url}" data-event-id="${event.event_id}">
-                            <img src="${url}" alt="Disaster imagery ${idx + 1}" loading="lazy" 
-                                 onerror="this.style.display='none'"
-                                 onload="this.parentElement.classList.add('loaded')" />
-                            <div class="imagery-overlay" onclick="openImageModal('${url}', '${event.event_id}')">
-                                <span class="view-fullscreen">🔍</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
     card.innerHTML = `
         <div class="event-header">
             <div class="event-type">${event.disaster_type}</div>
             <span class="severity-badge severity-${event.severity}">${event.severity}</span>
         </div>
-        ${imagerySection}
         <div class="event-details">
             <p><strong>Location:</strong> ${event.location}</p>
             <p><strong>Time:</strong> ${new Date(event.event_time).toLocaleString()}</p>
@@ -524,138 +497,9 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Open image modal for full-screen viewing
-function openImageModal(imageUrl, eventId) {
-    // Create modal if it doesn't exist
-    let modal = document.getElementById('image-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'image-modal';
-        modal.className = 'image-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="modal-close" onclick="closeImageModal()">&times;</span>
-                <img id="modal-image" src="" alt="Disaster imagery" />
-                <div class="modal-footer">
-                    <button onclick="analyzeImage('${eventId}')" class="analyze-btn">🤖 Analyze with AI</button>
-                    <a id="modal-image-link" href="" target="_blank" class="external-link">Open in New Tab ↗</a>
-                </div>
-                <div id="image-analysis" class="image-analysis" style="display: none;"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        
-        // Close on outside click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeImageModal();
-            }
-        });
-    }
-    
-    // Set image
-    const modalImage = document.getElementById('modal-image');
-    const modalLink = document.getElementById('modal-image-link');
-    modalImage.src = imageUrl;
-    modalLink.href = imageUrl;
-    
-    // Hide analysis
-    document.getElementById('image-analysis').style.display = 'none';
-    
-    // Show modal
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-}
-
-// Close image modal
-function closeImageModal() {
-    const modal = document.getElementById('image-modal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-// Analyze image with GPT-4 Vision
-async function analyzeImage(eventId) {
-    const modal = document.getElementById('image-modal');
-    if (!modal) return;
-    
-    const modalImage = document.getElementById('modal-image');
-    const imageUrl = modalImage.src;
-    const analysisDiv = document.getElementById('image-analysis');
-    
-    // Show loading state
-    analysisDiv.style.display = 'block';
-    analysisDiv.innerHTML = '<div class="loading-spinner">Analyzing image with AI...</div>';
-    
-    try {
-        // Get event context
-        const eventResponse = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-        const eventData = await eventResponse.json();
-        
-        const context = eventData.metadata ? 
-            `${eventData.metadata.disaster_type || ''} event at ${eventData.metadata.location || ''}` : 
-            null;
-        
-        // Analyze image
-        const response = await fetch(`${API_BASE_URL}/api/imagery/analyze`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                image_url: imageUrl,
-                context: context
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const analysis = data.analysis;
-        
-        // Display analysis
-        analysisDiv.innerHTML = `
-            <div class="analysis-header">
-                <h4>🤖 AI Image Analysis</h4>
-            </div>
-            <div class="analysis-content">
-                <p>${analysis.analysis || 'Analysis not available'}</p>
-                ${analysis.severity_indicators && analysis.severity_indicators.length > 0 ? `
-                    <div class="severity-indicators">
-                        <strong>Severity Indicators:</strong>
-                        ${analysis.severity_indicators.map(ind => `<span class="indicator-badge">${ind}</span>`).join('')}
-                    </div>
-                ` : ''}
-                ${analysis.key_observations && analysis.key_observations.length > 0 ? `
-                    <div class="key-observations">
-                        <strong>Key Observations:</strong>
-                        <ul>
-                            ${analysis.key_observations.map(obs => `<li>${obs}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-        
-    } catch (error) {
-        console.error('Image analysis error:', error);
-        analysisDiv.innerHTML = `
-            <div class="error-message">
-                Failed to analyze image. Please try again later.
-            </div>
-        `;
-    }
-}
-
 // Expose functions for debugging
 window.DisasterLensDebug = {
     loadEvents,
     loadStatistics,
-    reconnectWebSocket: initializeWebSocket,
-    openImageModal,
-    analyzeImage
+    reconnectWebSocket: initializeWebSocket
 };

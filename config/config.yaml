@@ -1,35 +1,34 @@
 application:
-  name: "DisasterLens AI"
-  version: "1.0.0"
-  description: "Real-Time Climate Emergency Intelligence System"
-
+  name: DisasterLens AI
+  version: 1.0.0
+  description: Real-Time Climate Emergency Intelligence System
 pathway:
   polling_interval_sec: 120
   persistence_enabled: true
   autocommit_duration_ms: 1000
-
 data_sources:
   gdacs:
     enabled: true
-    url: "https://www.gdacs.org/xml/rss.xml"
+    url: https://www.gdacs.org/xml/rss.xml
     polling_interval: 120
-  
   newsapi:
     enabled: true
-    query: "disaster earthquake wildfire flood hurricane"
+    query: disaster earthquake wildfire flood hurricane
     max_results: 10
     polling_interval: 180
-
+  nasa_eonet:
+    enabled: true
+    api_url: https://eonet.gsfc.nasa.gov/api/v3/events
+    polling_interval: 300
+    max_images_per_event: 3
 vector_store:
-  collection_name: "disaster_events"
+  collection_name: disaster_events
   embedding_dimension: 384
-  distance_metric: "cosine"
-
+  distance_metric: cosine
 llm:
   temperature: 0.2
   max_tokens: 1000
   top_p: 0.9
-
 risk_scoring:
   severity_weights:
     Red: 10
@@ -42,3 +41,9 @@ risk_scoring:
     flood: 1.0
     cyclone: 1.3
     volcano: 1.4
+imagery:
+  embedding_model: openai/clip-vit-base-patch32
+  vision_model: gpt-4o
+  worldview_base_url: https://worldview.earthdata.nasa.gov
+  auto_analyze_imagery: true
+  max_vision_calls_per_hour: 50
