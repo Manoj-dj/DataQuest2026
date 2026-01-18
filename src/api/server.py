@@ -15,12 +15,12 @@ from typing import Optional, Dict, List
 import threading
 
 from src.rag.vector_store import DisasterVectorStore
-from src.rag.llm_interface import GeminiLLM
+from src.rag.llm_interface import OpenAILLM
 from src.utils.logger import app_logger
 from src.utils.schemas import QueryRequest, QueryResponse, EventListResponse, HealthResponse
 
 class DisasterLensAPI:
-    def __init__(self, vector_store: DisasterVectorStore, llm: GeminiLLM):
+    def __init__(self, vector_store: DisasterVectorStore, llm: OpenAILLM):
         self.app = FastAPI(
             title="DisasterLens AI",
             description="Real-Time Climate Emergency Intelligence System",
@@ -239,7 +239,7 @@ class DisasterLensAPI:
                 self.logger.log_error("get_statistics", e)
                 raise HTTPException(status_code=500, detail="Failed to compute statistics")
 
-def create_app(vector_store: DisasterVectorStore, llm: GeminiLLM) -> FastAPI:
+def create_app(vector_store: DisasterVectorStore, llm: OpenAILLM) -> FastAPI:
     """
     Factory function to create FastAPI application.
     """

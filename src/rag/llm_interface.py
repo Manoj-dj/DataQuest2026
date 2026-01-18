@@ -1,19 +1,19 @@
 """
-Google Gemini LLM interface for response generation.
+OpenAI LLM interface for response generation.
 Handles prompt construction, context injection, and response parsing.
-Uses Gemini 2.0 Flash for fast, cost-effective generation.
+Uses OpenAI GPT models for fast, reliable generation.
 """
 
-import google.generativeai as genai
+from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import time
 from src.utils.logger import app_logger
 
-class GeminiLLM:
+class OpenAILLM:
     def __init__(
         self,
         api_key: str,
-        model_name: str = "gemini-2.0-flash-exp",
+        model_name: str = "gpt-4o-mini",
         temperature: float = 0.2,
         max_tokens: int = 1000
     ):
@@ -27,24 +27,15 @@ class GeminiLLM:
     
     def _initialize_model(self):
         """
-        Configure Gemini API client.
+        Configure OpenAI API client.
         """
         try:
-            genai.configure(api_key=self.api_key)
+            self.client = OpenAI(api_key=self.api_key)
             
-            self.model = genai.GenerativeModel(
-                model_name=self.model_name,
-                generation_config={
-                    'temperature': self.temperature,
-                    'max_output_tokens': self.max_tokens,
-                    'top_p': 0.9
-                }
-            )
-            
-            self.logger.logger.info(f"Gemini LLM initialized: {self.model_name}")
+            self.logger.logger.info(f"OpenAI LLM initialized: {self.model_name}")
         
         except Exception as e:
-            self.logger.log_error("GeminiLLM._initialize_model", e)
+            self.logger.log_error("OpenAILLM._initialize_model", e)
             raise
     
     def generate_rag_response(
@@ -67,14 +58,23 @@ class GeminiLLM:
         try:
             start_time = time.time()
             
-            prompt = self._construct_rag_prompt(
+            system_prompt, user_prompt = self._construct_rag_prompt(
                 query,
                 retrieved_contexts,
                 include_risk_assessment
             )
             
-            response = self.model.generate_content(prompt)
-            answer = response.text.strip()
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens
+            )
+            
+            answer = response.choices[0].message.content.strip()
             
             latency_ms = (time.time() - start_time) * 1000
             
@@ -92,7 +92,7 @@ class GeminiLLM:
             }
         
         except Exception as e:
-            self.logger.log_error("GeminiLLM.generate_rag_response", e)
+            self.logger.log_error("OpenAILLM.generate_rag_response", e)
             return {
                 'answer': "I apologize, but I encountered an error processing your query. Please try again.",
                 'sources': [],
@@ -106,9 +106,10 @@ class GeminiLLM:
         query: str,
         contexts: List[Dict[str, Any]],
         include_risk: bool
-    ) -> str:
+    ) -> tuple:
         """
         Build RAG prompt with system instructions and retrieved contexts.
+        Returns (system_prompt, user_prompt) tuple for OpenAI chat API.
         """
         system_instruction = """You are DisasterLens AI, an expert real-time climate emergency intelligence assistant.
 
@@ -137,9 +138,7 @@ RESPONSE FORMAT:
         if include_risk:
             risk_instruction = "\n\nALSO: Provide a brief risk assessment based on the severity and scope of events mentioned."
         
-        prompt = f"""{system_instruction}
-
-RETRIEVED DISASTER EVENTS (LATEST DATA):
+        user_prompt = f"""RETRIEVED DISASTER EVENTS (LATEST DATA):
 {context_section}
 
 USER QUERY: {query}
@@ -147,7 +146,7 @@ USER QUERY: {query}
 
 RESPONSE:"""
         
-        return prompt
+        return (system_instruction, user_prompt)
     
     def _format_contexts(self, contexts: List[Dict[str, Any]]) -> str:
         """

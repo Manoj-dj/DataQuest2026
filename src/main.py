@@ -17,7 +17,7 @@ import pathway as pw
 from src.pipeline.disaster_stream import DisasterStreamPipeline
 from src.rag.vector_store import DisasterVectorStore
 from src.rag.embedder import EmbeddingService
-from src.rag.llm_interface import GeminiLLM
+from src.rag.llm_interface import OpenAILLM
 from src.api.server import create_app
 from src.api.websocket_handler import websocket_endpoint, broadcast_new_event
 from src.utils.logger import app_logger
@@ -93,13 +93,13 @@ class DisasterLensApp:
             embedding_service=self.embedding_service
         )
         
-        gemini_api_key = os.getenv('GEMINI_API_KEY')
-        if not gemini_api_key:
-            raise ValueError("GEMINI_API_KEY not found in environment variables")
+        openai_api_key = os.getenv('OPENAI_API_KEY')
+        if not openai_api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
         
-        self.llm = GeminiLLM(
-            api_key=gemini_api_key,
-            model_name=os.getenv('GEMINI_MODEL', 'gemini-2.0-flash-exp'),
+        self.llm = OpenAILLM(
+            api_key=openai_api_key,
+            model_name=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             temperature=self.config['llm']['temperature'],
             max_tokens=self.config['llm']['max_tokens']
         )

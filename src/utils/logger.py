@@ -11,6 +11,7 @@ import json
 
 class DisasterLogger:
     def __init__(self, log_level: str = "INFO"):
+        self.logger = logger
         self.log_level = log_level
         self._setup_logger()
     

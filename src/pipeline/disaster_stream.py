@@ -3,7 +3,9 @@ Core Pathway streaming pipeline for disaster event processing.
 Handles real-time ingestion, transformation, enrichment, and indexing.
 """
 
+from typing import Dict
 import pathway as pw
+from pathway.io.python import ConnectorSubject
 from datetime import datetime
 from src.connectors.gdacs_connector import GDACSConnector
 from src.connectors.newsapi_connector import NewsAPIConnector
@@ -11,6 +13,33 @@ from src.pipeline.risk_scoring import RiskScoringEngine
 from src.utils.logger import app_logger
 from src.utils.schemas import DisasterEvent
 import os
+
+class DisasterConnectorSubject(ConnectorSubject):
+    def __init__(self, connector):
+        super().__init__()
+        self.connector = connector
+    
+    def run(self):
+        for event in self.connector._safe_fetch():
+            if event:
+                self.next(
+                    event_id=event.get('event_id', ''),
+                    disaster_type=event.get('disaster_type', ''),
+                    severity=event.get('severity', ''),
+                    latitude=event.get('latitude', 0.0),
+                    longitude=event.get('longitude', 0.0),
+                    location_name=event.get('location_name', ''),
+                    population_affected=event.get('population_affected', 0),
+                    description=event.get('description', ''),
+                    magnitude=event.get('magnitude'),
+                    event_time=event.get('event_time', ''),
+                    source=event.get('source', ''),
+                    url=event.get('url', '')
+                )
+    
+    @property
+    def _deletions_enabled(self):
+        return False
 
 class DisasterStreamPipeline:
     def __init__(self, config: Dict):
@@ -51,14 +80,16 @@ class DisasterStreamPipeline:
             'url': pw.column_definition(dtype=str, default_value='')
         })
         
+        gdacs_subject = DisasterConnectorSubject(self.gdacs_connector)
         gdacs_stream = pw.io.python.read(
-            self.gdacs_connector._safe_fetch(),
+            gdacs_subject,
             schema=gdacs_schema,
             mode="streaming"
         )
         
+        news_subject = DisasterConnectorSubject(self.news_connector)
         news_stream = pw.io.python.read(
-            self.news_connector._safe_fetch(),
+            news_subject,
             schema=gdacs_schema,
             mode="streaming"
         )
