@@ -7,6 +7,7 @@ Uses OpenAI GPT models for fast, reliable generation.
 from openai import OpenAI
 from typing import List, Dict, Any, Optional
 import time
+import json
 from src.utils.logger import app_logger
 
 class OpenAILLM:
@@ -64,17 +65,45 @@ class OpenAILLM:
                 include_risk_assessment
             )
             
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens
-            )
+            # Try JSON mode first, fallback to regular mode if not supported
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    response_format={"type": "json_object"}
+                )
+            except Exception as e:
+                # Fallback if JSON mode not supported
+                self.logger.logger.warning(f"JSON mode not supported, using regular mode: {str(e)}")
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens
+                )
             
-            answer = response.choices[0].message.content.strip()
+            response_content = response.choices[0].message.content.strip()
+            
+            # Parse JSON response
+            try:
+                structured_data = json.loads(response_content)
+            except json.JSONDecodeError:
+                # Fallback: if JSON parsing fails, treat as plain text
+                self.logger.logger.warning("Failed to parse JSON response, using fallback")
+                structured_data = {
+                    'key_events': [],
+                    'risk_assessment_items': [],
+                    'recommendations': [],
+                    'actionable_insight': response_content
+                }
             
             latency_ms = (time.time() - start_time) * 1000
             
@@ -84,11 +113,16 @@ class OpenAILLM:
             self.logger.log_query(query, latency_ms, len(sources))
             
             return {
-                'answer': answer,
+                'answer': structured_data.get('actionable_insight', ''),  # Keep for backward compatibility
                 'sources': sources,
-                'risk_assessment': risk_assessment if include_risk_assessment else None,
+                'risk_assessment': risk_assessment if include_risk_assessment else None,  # Keep for backward compatibility
                 'latency_ms': latency_ms,
-                'model': self.model_name
+                'model': self.model_name,
+                # New structured fields
+                'key_events': structured_data.get('key_events', []),
+                'risk_assessment_items': structured_data.get('risk_assessment', []),
+                'recommendations': structured_data.get('recommendations', []),
+                'actionable_insight': structured_data.get('actionable_insight', '')
             }
         
         except Exception as e:
@@ -125,31 +159,36 @@ CRITICAL INSTRUCTIONS:
 7. Be concise but comprehensive
 8. Use clear, professional language suitable for emergency managers
 
-RESPONSE FORMAT (Use Markdown):
-Format your response using clean, structured markdown:
-- Use ## for main sections (e.g., ## Current Situation, ## Risk Assessment)
-- Use ### for subsections
-- Use **bold** for important information like locations, severities, magnitudes
-- Use bullet points (-) for lists of events or recommendations
-- Use numbered lists (1., 2., 3.) for step-by-step recommendations
-- Write in clear, professional language
-- Include specific numbers, dates, and locations
-- End with actionable insights if applicable
+RESPONSE FORMAT (JSON ONLY):
+You MUST respond with valid JSON in this exact structure:
+{
+  "key_events": [
+    "Event description 1 (e.g., 'Earthquake (Severity: Red) - Location, magnitude X.X, affecting Y people')",
+    "Event description 2",
+    ...
+  ],
+  "risk_assessment": [
+    "Risk point 1 (e.g., 'High risk due to magnitude and population density')",
+    "Risk point 2",
+    ...
+  ],
+  "recommendations": [
+    "Recommendation 1 (e.g., 'Monitor official sources for updates')",
+    "Recommendation 2",
+    ...
+  ],
+  "actionable_insight": "A concise summary sentence or paragraph that provides the main takeaway"
+}
 
-Example format:
-## Current Situation
-Based on the latest data, there are [number] active disaster events...
-
-**Key Events:**
-- **Earthquake** (Severity: Red) - Location, magnitude X.X, affecting Y people
-- **Wildfire** (Severity: Orange) - Location, Z hectares affected
-
-## Risk Assessment
-The earthquake poses a **high risk** due to...
-
-## Recommendations
-1. Monitor official sources for updates
-2. Follow evacuation orders if applicable
+IMPORTANT:
+- Do NOT use markdown formatting (no **, ##, -, etc.)
+- Do NOT include asterisks or markdown syntax
+- Use plain text strings in arrays
+- key_events: List the most important disaster events from the contexts
+- risk_assessment: List specific risk factors or concerns
+- recommendations: List actionable steps or advice
+- actionable_insight: A single clear summary sentence or short paragraph
+- All fields should be arrays of strings except actionable_insight which is a string
 """
         
         context_section = self._format_contexts(contexts)
@@ -205,10 +244,12 @@ Details:
         sources = []
         for ctx in contexts:
             metadata = ctx.get('metadata', {})
+            # Use location_name first, fallback to location, then 'Unknown Location'
+            location = metadata.get('location_name') or metadata.get('location') or 'Unknown Location'
             sources.append({
                 'event_id': ctx.get('id', 'Unknown'),
                 'disaster_type': metadata.get('disaster_type', 'Unknown'),
-                'location': metadata.get('location', 'Unknown'),
+                'location': location,
                 'severity': metadata.get('severity', 'Unknown'),
                 'source': metadata.get('source', 'Unknown'),
                 'url': metadata.get('url', ''),
@@ -223,6 +264,38 @@ Details:
         """
         if not contexts:
             return None
+        
+        risk_scores = []
+        red_alerts = 0
+        
+        for ctx in contexts:
+            metadata = ctx.get('metadata', {})
+            
+            risk_score = metadata.get('risk_score')
+            if risk_score:
+                try:
+                    risk_scores.append(float(risk_score))
+                except:
+                    pass
+            
+            if metadata.get('severity') == 'Red':
+                red_alerts += 1
+        
+        if risk_scores:
+            avg_risk = sum(risk_scores) / len(risk_scores)
+            
+            if avg_risk >= 7.0 or red_alerts >= 2:
+                level = "CRITICAL"
+            elif avg_risk >= 5.0 or red_alerts >= 1:
+                level = "HIGH"
+            elif avg_risk >= 3.0:
+                level = "MODERATE"
+            else:
+                level = "LOW"
+            
+            return f"{level} - Average Risk Score: {avg_risk:.1f}/10 | Red Alerts: {red_alerts}"
+        
+        return None
     
     def analyze_disaster_image(
         self,
@@ -340,6 +413,90 @@ Be specific, factual, and actionable in your analysis."""
             observations = [s.strip() for s in sentences if s.strip()]
         
         return observations[:5]  # Limit to 5 observations
+    
+    def predict_disaster_impact(
+        self,
+        current_event: Dict[str, Any],
+        similar_events: List[Dict[str, Any]]
+    ) -> str:
+        """
+        Use RAG to predict impact based on historical similar disasters.
+        Uses our AI model to analyze patterns and forecast outcomes.
+        """
+        try:
+            # Build context from similar historical events
+            historical_context_parts = []
+            for i, evt in enumerate(similar_events[:3]):
+                metadata = evt.get('metadata', {})
+                historical_context_parts.append(
+                    f"**Past Event {i+1}:**\n"
+                    f"- Type: {metadata.get('disaster_type', 'Unknown')}\n"
+                    f"- Location: {metadata.get('location_name') or metadata.get('location', 'Unknown')}\n"
+                    f"- Severity: {metadata.get('severity', 'Unknown')}\n"
+                    f"- Impact: {metadata.get('population_affected', 0)} people affected\n"
+                    f"- Risk Score: {metadata.get('risk_score', 'N/A')}/10\n"
+                    f"- Description: {evt.get('text', '')[:200]}"
+                )
+            
+            historical_context = "\n\n".join(historical_context_parts)
+            
+            current_metadata = current_event.get('metadata', {})
+            
+            prompt = f"""Based on historical disaster data, predict the likely impact and trajectory of this current event:
+
+**Current Disaster:**
+- Type: {current_metadata.get('disaster_type', 'Unknown')}
+- Location: {current_metadata.get('location_name') or current_metadata.get('location', 'Unknown')}
+- Current Severity: {current_metadata.get('severity', 'Unknown')}
+- Coordinates: {current_metadata.get('latitude', 'N/A')}, {current_metadata.get('longitude', 'N/A')}
+- Current Risk Score: {current_metadata.get('risk_score', 'N/A')}/10
+
+**Similar Historical Disasters:**
+{historical_context if historical_context else 'No similar historical events found.'}
+
+Provide a prediction covering:
+1. **Expected Impact Scale** (population affected, infrastructure damage)
+2. **Timeline** (how long will this disaster last/evolve)
+3. **Secondary Risks** (cascading disasters, evacuation needs)
+4. **Recommended Actions** (immediate response priorities)
+
+Be specific and data-driven based on historical patterns. Format as JSON with keys: expected_impact, timeline, secondary_risks, recommended_actions."""
+            
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a disaster prediction AI that analyzes historical patterns to forecast current disaster impacts. Use our AI model's predictive capabilities to provide accurate, data-driven forecasts."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,  # Low temperature for factual predictions
+                max_tokens=500,
+                response_format={"type": "json_object"}
+            )
+            
+            prediction_text = response.choices[0].message.content.strip()
+            
+            # Parse JSON response
+            try:
+                prediction_data = json.loads(prediction_text)
+                # Format as readable text
+                formatted = f"""**Expected Impact:** {prediction_data.get('expected_impact', 'Analysis in progress')}
+
+**Timeline:** {prediction_data.get('timeline', 'Monitoring ongoing')}
+
+**Secondary Risks:** {prediction_data.get('secondary_risks', 'None identified')}
+
+**Recommended Actions:** {prediction_data.get('recommended_actions', 'Continue monitoring')}"""
+                return formatted
+            except json.JSONDecodeError:
+                # Fallback to raw response
+                return prediction_text
+        
+        except Exception as e:
+            self.logger.log_error("OpenAILLM.predict_disaster_impact", e)
+            return "Unable to generate prediction at this time. Please try again later."
         
         risk_scores = []
         red_alerts = 0

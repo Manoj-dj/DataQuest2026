@@ -8,7 +8,7 @@ torchvision>=0.21.0
 pathway==0.13.1
 
 # Vector Database (upgraded for numpy 2.x compatibility)
-chromadb>=0.5.0
+chromadb>=0.5.15  # Version 0.5.15+ supports NumPy 2.0
 
 # Embeddings (upgraded transformers for huggingface-hub compatibility)
 sentence-transformers==2.3.1

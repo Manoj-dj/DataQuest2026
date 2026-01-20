@@ -1,184 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DisasterLens AI - Real-Time Climate Emergency Intelligence</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>
-                    <span class="logo">🌍</span>
-                    DisasterLens AI
-                </h1>
-                <p class="tagline">Real-Time Climate Emergency Intelligence System</p>
-            </div>
-            <div class="system-status">
-                <div id="connection-status" class="status-badge disconnected">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Connecting...</span>
-                </div>
-                <div class="stats">
-                    <span id="active-events-count">0</span> Active Events
-                </div>
-            </div>
-        </header>
-
-        <main>
-            <section class="query-section">
-                <div class="query-container">
-                    <h2>Ask About Current Disasters</h2>
-                    <form id="query-form">
-                        <div class="input-group">
-                            <input 
-                                type="text" 
-                                id="query-input" 
-                                placeholder="e.g., What earthquakes happened in the last 24 hours?"
-                                autocomplete="off"
-                                required
-                            />
-                            <button type="submit" id="query-submit">
-                                <span class="button-text">Query</span>
-                                <span class="loader" style="display: none;"></span>
-                            </button>
-                        </div>
-                        <div class="quick-queries">
-                            <span class="quick-query-label">Quick queries:</span>
-                            <button type="button" class="quick-query-btn" data-query="What are the most severe disasters right now?">Most Severe</button>
-                            <button type="button" class="quick-query-btn" data-query="Show me all earthquakes in the last 48 hours">Earthquakes</button>
-                            <button type="button" class="quick-query-btn" data-query="Which wildfires are currently active?">Wildfires</button>
-                            <button type="button" class="quick-query-btn" data-query="What disasters affect populated areas?">High Impact</button>
-                        </div>
-                    </form>
-
-                    <div id="response-container" style="display: none;">
-                        <div class="response-header">
-                            <h3>Response</h3>
-                            <div class="response-meta">
-                                <span id="response-latency"></span>
-                                <span id="response-timestamp"></span>
-                            </div>
-                        </div>
-                        <div id="response-content" class="response-content"></div>
-                        
-                        <div id="risk-assessment-container" style="display: none;">
-                            <div class="risk-assessment">
-                                <h4>Risk Assessment</h4>
-                                <div id="risk-assessment-content"></div>
-                            </div>
-                        </div>
-
-                        <div id="sources-container" style="display: none;">
-                            <h4>Sources</h4>
-                            <div id="sources-list" class="sources-list"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="map-section">
-                <div class="map-container">
-                    <h2>Live Disaster Map</h2>
-                    <div id="map"></div>
-                    <div class="map-legend">
-                        <div class="legend-item">
-                            <span class="legend-marker red"></span>
-                            <span>Red Alert (Severe)</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-marker orange"></span>
-                            <span>Orange Alert (Moderate)</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-marker green"></span>
-                            <span>Green Alert (Minor)</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="events-section">
-                <div class="events-container">
-                    <div class="events-header">
-                        <h2>Recent Disaster Events</h2>
-                        <button id="refresh-events" class="refresh-btn">
-                            <span>↻</span> Refresh
-                        </button>
-                    </div>
-                    
-                    <div class="filter-bar">
-                        <select id="type-filter">
-                            <option value="">All Types</option>
-                            <option value="earthquake">Earthquake</option>
-                            <option value="wildfire">Wildfire</option>
-                            <option value="flood">Flood</option>
-                            <option value="cyclone">Cyclone</option>
-                            <option value="tsunami">Tsunami</option>
-                            <option value="volcano">Volcano</option>
-                        </select>
-                        <select id="severity-filter">
-                            <option value="">All Severities</option>
-                            <option value="Red">Red Alert</option>
-                            <option value="Orange">Orange Alert</option>
-                            <option value="Green">Green Alert</option>
-                        </select>
-                    </div>
-
-                    <div id="events-list" class="events-list">
-                        <div class="loading-spinner">Loading events...</div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="statistics-section">
-                <div class="statistics-container">
-                    <h2>Global Statistics</h2>
-                    <div id="stats-grid" class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="stat-total">-</div>
-                            <div class="stat-label">Total Events</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="stat-avg-risk">-</div>
-                            <div class="stat-label">Avg Risk Score</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="stat-high-risk">-</div>
-                            <div class="stat-label">High Risk Events</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="stat-red-alerts">-</div>
-                            <div class="stat-label">Red Alerts</div>
-                        </div>
-                    </div>
-                    <div id="stats-charts">
-                        <div class="chart-container">
-                            <h3>Events by Type</h3>
-                            <canvas id="type-chart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h3>Events by Severity</h3>
-                            <canvas id="severity-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            <p>&copy; 2026 DisasterLens AI | Built with Pathway, Gemini AI & ChromaDB</p>
-            <p class="footer-note">Real-Time Climate Emergency Intelligence for Emergency Response</p>
-        </footer>
-    </div>
-
-    <div id="notification-container"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
-    <script src="app.js"></script>
-</body>
+    <script>
+      // CRITICAL: Verify this HTML is loading (not old one)
+      console.log('📄📄📄 REACT HTML LOADED - This is the NEW React app HTML 📄📄📄');
+      console.log('📄 HTML file loaded at', new Date().toISOString());
+      console.log('📄 If you see app.js loading, you are viewing the OLD app!');
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- CRITICAL: This should load React, NOT app.js -->
+    <script type="module" src="/src/index.jsx"></script>
+    <!-- OLD APP.JS SHOULD NOT BE HERE -->
+  </body>
 </html>

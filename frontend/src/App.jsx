@@ -6,8 +6,18 @@ import { DisasterMap } from './components/Map/DisasterMap';
 import { QueryPanel } from './components/Query/QueryPanel';
 import { EventsList } from './components/Events/EventsList';
 import { StatsDashboard } from './components/Dashboard/StatsDashboard';
+import { PredictionsDashboard } from './components/Predictions/PredictionsDashboard';
 import { ImageryModal } from './components/Imagery/ImageryModal';
+import { ExplainableAlerts } from './components/Alerts/ExplainableAlerts';
+import { ScenarioSimulator } from './components/Simulator/ScenarioSimulator';
+import { AlertSettings } from './components/Settings/AlertSettings';
+import { PastEvents } from './components/Events/PastEvents';
 import { useDisasterEvents } from './hooks/useDisasterEvents';
+
+// CRITICAL: Verify React app is loading (not old app.js)
+console.log('✅✅✅ REACT APP LOADED - This is the NEW React app ✅✅✅');
+console.log('✅ React App.jsx loaded at', new Date().toISOString());
+console.log('✅ If you see "Map initialized" from app.js, the OLD app is still loading!');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,12 +106,29 @@ function AppContent() {
               <QueryPanel />
             </div>
           )}
+          {activeView === 'predictions' && (
+            <div className="h-[calc(100vh-73px)]">
+              <PredictionsDashboard />
+            </div>
+          )}
+          {activeView === 'alerts' && (
+            <div className="h-[calc(100vh-73px)] overflow-y-auto">
+              <ExplainableAlerts />
+            </div>
+          )}
+          {activeView === 'simulator' && (
+            <div className="h-[calc(100vh-73px)] overflow-y-auto">
+              <ScenarioSimulator />
+            </div>
+          )}
+          {activeView === 'past-events' && (
+            <div className="h-[calc(100vh-73px)] overflow-y-auto">
+              <PastEvents />
+            </div>
+          )}
           {activeView === 'settings' && (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-white mb-4">Settings</h2>
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                <p className="text-slate-400">Settings panel coming soon...</p>
-              </div>
+            <div className="h-[calc(100vh-73px)] overflow-y-auto">
+              <AlertSettings />
             </div>
           )}
         </main>

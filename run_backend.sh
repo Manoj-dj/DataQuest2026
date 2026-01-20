@@ -1,8 +1,10 @@
 #!/bin/bash
 # Run the backend server with correct Python path
 
-cd /home/csd07/DataQuest2026
-export PYTHONPATH="/home/csd07/DataQuest2026:$PYTHONPATH"
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
 
 # Check if uv is available and use it, otherwise use python3 directly
 if command -v uv &> /dev/null; then

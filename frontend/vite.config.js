@@ -13,6 +13,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    strictPort: true,
+    hmr: {
+      overlay: true, // Show errors in browser overlay
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
@@ -28,8 +32,5 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      input: './public/index.html',
-    },
   },
 })

@@ -1,13 +1,36 @@
-import { Globe, Wifi, WifiOff, Activity } from 'lucide-react';
+import { Globe, Wifi, WifiOff, Activity, Zap } from 'lucide-react';
 import { useHealth } from '../../hooks/useHealth';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useState, useEffect } from 'react';
 
 export const Header = () => {
   const { data: health } = useHealth();
   const { connectionStatus } = useWebSocket();
+  const [predictionsActive, setPredictionsActive] = useState(false);
 
   const isHealthy = health?.status === 'healthy';
   const isConnected = connectionStatus === 'connected';
+
+  // Check if predictions are available
+  useEffect(() => {
+    const checkPredictions = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/predictions');
+        const data = await response.json();
+        const hasPredictions = data.total > 0 || (data.predictions && data.predictions.length > 0);
+        setPredictionsActive(hasPredictions);
+        console.log('Predictions status:', hasPredictions, data);
+      } catch (error) {
+        console.log('Predictions check failed:', error);
+        setPredictionsActive(false);
+      }
+    };
+
+    checkPredictions();
+    // Refresh every 30 seconds
+    const interval = setInterval(checkPredictions, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
@@ -32,6 +55,13 @@ export const Header = () => {
               <span className="text-sm text-red-400">Disconnected</span>
             </>
           )}
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700">
+          <Zap className={`w-4 h-4 ${predictionsActive ? 'text-yellow-400' : 'text-yellow-500'}`} />
+          <span className={`text-sm font-medium ${predictionsActive ? 'text-yellow-400' : 'text-yellow-500'}`}>
+            {predictionsActive ? 'Predictions Active' : 'Predictions'}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800">

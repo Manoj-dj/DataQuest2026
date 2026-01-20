@@ -1,0 +1,125 @@
+/* Predictions Dashboard Styles */
+
+.prediction-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.prediction-card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.prediction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prediction-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.prediction-content {
+  color: #E5E7EB;
+  line-height: 1.7;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.prediction-content strong {
+  color: #FCD34D;
+  font-weight: 600;
+}
+
+.prediction-footer {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.confidence-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+/* Live Alert Banner */
+.alert-banner {
+  position: relative;
+  min-width: 320px;
+  max-width: 400px;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.5);
+  animation: slideIn 0.5s ease-out;
+  z-index: 10000;
+}
+
+.alert-banner.medium {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.5);
+}
+
+.alert-banner.low {
+  background: linear-gradient(135deg, #10B981, #059669);
+  box-shadow: 0 10px 40px rgba(16, 185, 129, 0.5);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.alert-content {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.alert-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.alert-text {
+  flex: 1;
+}
+
+.alert-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.alert-text p {
+  font-size: 13px;
+  margin: 4px 0;
+  opacity: 0.95;
+}
+
+.alert-time {
+  font-size: 11px;
+  opacity: 0.8;
+  display: block;
+  margin-top: 4px;
+}

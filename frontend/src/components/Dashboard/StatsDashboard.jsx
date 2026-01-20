@@ -37,6 +37,15 @@ export const StatsDashboard = () => {
     value,
   }));
 
+  // Map severity names to colors
+  const getSeverityColor = (severity) => {
+    const severityUpper = severity?.toUpperCase() || '';
+    if (severityUpper === 'GREEN') return '#22c55e'; // Green
+    if (severityUpper === 'RED') return '#ef4444'; // Red
+    if (severityUpper === 'ORANGE') return '#f97316'; // Orange
+    return '#6b7280'; // Default gray
+  };
+
   return (
     <div className="p-6 space-y-6">
       <h2 className="text-2xl font-bold text-white">Global Statistics</h2>
@@ -115,7 +124,11 @@ export const StatsDashboard = () => {
                   borderRadius: '6px',
                 }}
               />
-              <Bar dataKey="value" fill="#3b82f6" />
+              <Bar dataKey="value">
+                {severityData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getSeverityColor(entry.name)} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

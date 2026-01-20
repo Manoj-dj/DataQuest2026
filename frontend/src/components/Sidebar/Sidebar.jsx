@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Map, MessageSquare, BarChart3, Settings, Filter } from 'lucide-react';
+import { LayoutDashboard, Map, MessageSquare, BarChart3, Settings, Filter, Zap, AlertTriangle, Play, History } from 'lucide-react';
 import { DISASTER_TYPES, SEVERITY_LEVELS } from '../../utils/constants';
 
 export const Sidebar = ({ 
@@ -17,7 +17,11 @@ export const Sidebar = ({
     { id: 'events', label: 'Events', icon: BarChart3 },
     { id: 'map', label: 'Map', icon: Map },
     { id: 'query', label: 'Query', icon: MessageSquare },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'predictions', label: 'Predictions', icon: Zap },
+    { id: 'alerts', label: 'Explainable Alerts', icon: AlertTriangle },
+    { id: 'simulator', label: 'Scenario Simulator', icon: Play },
+    { id: 'past-events', label: 'Past Events', icon: History },
+    { id: 'settings', label: 'Alert Settings', icon: Settings },
   ];
 
   if (!isOpen) {
